@@ -9,26 +9,27 @@ interface RunwayProps {
 function Runway({ settings, onSettingsUpdate }: RunwayProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editMonths, setEditMonths] = useState(settings.runwayMonths)
-  const [editStartDate, setEditStartDate] = useState(settings.startDate || '')
   const [daysElapsed, setDaysElapsed] = useState(0)
   const [daysRemaining, setDaysRemaining] = useState(0)
   const [progressPercentage, setProgressPercentage] = useState(0)
 
+  const runwayStartDate = settings.resignationDate
+
   useEffect(() => {
-    if (settings.startDate) {
+    if (runwayStartDate) {
       calculateRunway()
-      const interval = setInterval(calculateRunway, 60000) // Update every minute
+      const interval = setInterval(calculateRunway, 60000)
       return () => clearInterval(interval)
     }
-  }, [settings.startDate, settings.runwayMonths])
+  }, [runwayStartDate, settings.runwayMonths])
 
   const calculateRunway = () => {
-    if (!settings.startDate) return
+    if (!runwayStartDate) return
 
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    const startDate = new Date(settings.startDate)
+    const startDate = new Date(runwayStartDate)
     startDate.setHours(0, 0, 0, 0)
 
     const endDate = new Date(startDate)
@@ -51,14 +52,12 @@ function Runway({ settings, onSettingsUpdate }: RunwayProps) {
     onSettingsUpdate({
       ...settings,
       runwayMonths: editMonths,
-      startDate: editStartDate || null
     })
     setIsEditing(false)
   }
 
   const handleCancel = () => {
     setEditMonths(settings.runwayMonths)
-    setEditStartDate(settings.startDate || '')
     setIsEditing(false)
   }
 
@@ -68,7 +67,7 @@ function Runway({ settings, onSettingsUpdate }: RunwayProps) {
   }
 
   const getStatusColor = () => {
-    if (!settings.startDate) return 'text-gray-400'
+    if (!runwayStartDate) return 'text-gray-400'
     if (progressPercentage >= 90) return 'text-red-400'
     if (progressPercentage >= 70) return 'text-orange-400'
     if (progressPercentage >= 50) return 'text-yellow-400'
@@ -114,16 +113,13 @@ function Runway({ settings, onSettingsUpdate }: RunwayProps) {
               className="input-field w-full"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">퇴사일 (선택사항)</label>
-            <input
-              type="date"
-              value={editStartDate}
-              onChange={(e) => setEditStartDate(e.target.value)}
-              className="input-field w-full"
-            />
+          <div className="p-3 bg-gray-700 rounded-lg">
+            <div className="text-sm text-gray-400 mb-1">퇴사일 (D-Day 연동)</div>
+            <div className="text-lg font-semibold text-gray-200">
+              {runwayStartDate ? formatDate(runwayStartDate) : '미설정'}
+            </div>
             <p className="text-xs text-gray-500 mt-1">
-              퇴사일을 설정하면 실시간 런웨이 추적이 시작됩니다
+              퇴사 D-Day에서 설정한 날짜가 자동으로 적용됩니다
             </p>
           </div>
           <div className="flex gap-3">
@@ -148,11 +144,11 @@ function Runway({ settings, onSettingsUpdate }: RunwayProps) {
               </div>
             </div>
 
-            {settings.startDate ? (
+            {runwayStartDate ? (
               <div className="bg-gray-700 rounded-lg p-4">
                 <div className="text-sm text-gray-400 mb-2">퇴사일</div>
                 <div className="text-lg font-semibold text-gray-200">
-                  {formatDate(settings.startDate)}
+                  {formatDate(runwayStartDate)}
                 </div>
                 <div className="text-sm text-gray-500 mt-1">
                   {daysElapsed}일 경과
@@ -168,7 +164,7 @@ function Runway({ settings, onSettingsUpdate }: RunwayProps) {
             )}
           </div>
 
-          {settings.startDate && (
+          {runwayStartDate && (
             <>
               <div className="text-center">
                 <div className={`text-6xl font-bold mb-3 ${getStatusColor()}`}>
@@ -237,17 +233,11 @@ function Runway({ settings, onSettingsUpdate }: RunwayProps) {
             </>
           )}
 
-          {!settings.startDate && (
+          {!runwayStartDate && (
             <div className="text-center py-8 bg-gray-700 rounded-lg">
               <div className="text-gray-400 mb-4">
-                퇴사일을 설정하여 런웨이 추적을 시작하세요
+                퇴사 D-Day를 설정하면 런웨이 추적이 자동으로 시작됩니다
               </div>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="btn-primary"
-              >
-                퇴사일 설정하기
-              </button>
             </div>
           )}
         </div>
