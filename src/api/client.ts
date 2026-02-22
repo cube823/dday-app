@@ -1,66 +1,57 @@
 import { Settings, Quest, Milestone, DailyLog } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-
-async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`API error: ${response.statusText}`);
+// Electron IPC bridge type
+declare global {
+  interface Window {
+    electronAPI: {
+      getSettings: () => Promise<Settings>;
+      updateSettings: (settings: Partial<Settings>) => Promise<void>;
+      getQuests: () => Promise<Quest[]>;
+      addQuest: (quest: Partial<Quest>) => Promise<number>;
+      updateQuest: (quest: Quest) => Promise<void>;
+      deleteQuest: (id: number) => Promise<void>;
+      completeQuest: (id: number) => Promise<CompleteQuestResult>;
+      getDailyLogs: () => Promise<DailyLog[]>;
+      getTodayQuests: () => Promise<Quest[]>;
+      getMilestones: (stepId: number) => Promise<Milestone[]>;
+      addMilestone: (milestone: Omit<Milestone, 'id'>) => Promise<number>;
+      updateMilestone: (milestone: Milestone) => Promise<void>;
+      deleteMilestone: (id: number) => Promise<void>;
+    };
   }
-
-  return response.json();
 }
 
 // Settings API
 export async function getSettings(): Promise<Settings> {
-  return fetchAPI<Settings>('/settings');
+  return window.electronAPI.getSettings();
 }
 
 export async function updateSettings(settings: Partial<Settings>): Promise<void> {
-  await fetchAPI('/settings', {
-    method: 'PUT',
-    body: JSON.stringify(settings),
-  });
+  await window.electronAPI.updateSettings(settings);
 }
 
 // Quest / Learning Steps API
 export async function getQuests(): Promise<Quest[]> {
-  return fetchAPI<Quest[]>('/learning-steps');
+  return window.electronAPI.getQuests();
 }
 
 // Backward compatibility alias
 export const getLearningSteps = getQuests;
 
 export async function addQuest(quest: Partial<Quest>): Promise<number> {
-  const result = await fetchAPI<{ id: number }>('/learning-steps', {
-    method: 'POST',
-    body: JSON.stringify(quest),
-  });
-  return result.id;
+  return window.electronAPI.addQuest(quest);
 }
 
 export const addLearningStep = addQuest;
 
 export async function updateQuest(quest: Quest): Promise<void> {
-  await fetchAPI(`/learning-steps/${quest.id}`, {
-    method: 'PUT',
-    body: JSON.stringify(quest),
-  });
+  await window.electronAPI.updateQuest(quest);
 }
 
 export const updateLearningStep = updateQuest;
 
 export async function deleteQuest(id: number): Promise<void> {
-  await fetchAPI(`/learning-steps/${id}`, {
-    method: 'DELETE',
-  });
+  await window.electronAPI.deleteQuest(id);
 }
 
 export const deleteLearningStep = deleteQuest;
@@ -78,43 +69,32 @@ export interface CompleteQuestResult {
 }
 
 export async function completeQuest(id: number): Promise<CompleteQuestResult> {
-  return fetchAPI<CompleteQuestResult>(`/complete-quest/${id}`, {
-    method: 'POST',
-  });
+  return window.electronAPI.completeQuest(id);
 }
 
 // Daily logs
 export async function getDailyLogs(): Promise<DailyLog[]> {
-  return fetchAPI<DailyLog[]>('/daily-logs');
+  return window.electronAPI.getDailyLogs();
 }
 
 // Today's quests
 export async function getTodayQuests(): Promise<Quest[]> {
-  return fetchAPI<Quest[]>('/today');
+  return window.electronAPI.getTodayQuests();
 }
 
 // Milestones API
 export async function getMilestones(stepId: number): Promise<Milestone[]> {
-  return fetchAPI<Milestone[]>(`/milestones/${stepId}`);
+  return window.electronAPI.getMilestones(stepId);
 }
 
 export async function addMilestone(milestone: Omit<Milestone, 'id'>): Promise<number> {
-  const result = await fetchAPI<{ id: number }>('/milestones', {
-    method: 'POST',
-    body: JSON.stringify(milestone),
-  });
-  return result.id;
+  return window.electronAPI.addMilestone(milestone);
 }
 
 export async function updateMilestone(milestone: Milestone): Promise<void> {
-  await fetchAPI(`/milestones/${milestone.id}`, {
-    method: 'PUT',
-    body: JSON.stringify(milestone),
-  });
+  await window.electronAPI.updateMilestone(milestone);
 }
 
 export async function deleteMilestone(id: number): Promise<void> {
-  await fetchAPI(`/milestones/${id}`, {
-    method: 'DELETE',
-  });
+  await window.electronAPI.deleteMilestone(id);
 }
