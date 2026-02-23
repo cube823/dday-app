@@ -1,4 +1,4 @@
-import { Settings, Quest, Milestone, DailyLog } from '../types';
+import { Settings, Quest, Milestone, DailyLog, DopamineCategory, DopamineLog, AbstinenceTimer, DopamineDaily } from '../types';
 
 export interface AuthResponse {
   success: boolean;
@@ -44,6 +44,20 @@ declare global {
       stopSync: () => Promise<void>;
       syncNow: () => Promise<void>;
       getSyncStatus: () => Promise<SyncStatus>;
+      // Dopamine
+      getDopamineCategories: () => Promise<DopamineCategory[]>;
+      addDopamineCategory: (cat: Record<string, unknown>) => Promise<number>;
+      updateDopamineCategory: (cat: Record<string, unknown>) => Promise<void>;
+      deleteDopamineCategory: (id: number) => Promise<void>;
+      startDopamineLog: (categoryId: number) => Promise<number>;
+      stopDopamineLog: (logId: number) => Promise<DopamineLog>;
+      getActiveDopamineLog: () => Promise<DopamineLog | null>;
+      getDopamineLogsForDate: (date: string) => Promise<DopamineLog[]>;
+      startAbstinenceTimer: (categoryId: number) => Promise<number>;
+      getAbstinenceTimersForDate: (date: string) => Promise<AbstinenceTimer[]>;
+      finalizeDay: (date: string) => Promise<void>;
+      getDopamineDaily: (date: string) => Promise<DopamineDaily | null>;
+      getDopamineDailyRange: (days: number) => Promise<DopamineDaily[]>;
     };
   }
 }
@@ -174,4 +188,51 @@ export async function syncNow(): Promise<void> {
 
 export async function getSyncStatus(): Promise<SyncStatus> {
   return window.electronAPI.getSyncStatus();
+}
+
+// Dopamine Categories
+export async function getDopamineCategories(): Promise<DopamineCategory[]> {
+  return window.electronAPI.getDopamineCategories();
+}
+export async function addDopamineCategory(cat: { name: string; icon: string; toleranceRate: number }): Promise<number> {
+  return window.electronAPI.addDopamineCategory(cat);
+}
+export async function updateDopamineCategory(cat: { id: number; name?: string; icon?: string; toleranceRate?: number; isActive?: boolean }): Promise<void> {
+  return window.electronAPI.updateDopamineCategory(cat);
+}
+export async function deleteDopamineCategory(id: number): Promise<void> {
+  return window.electronAPI.deleteDopamineCategory(id);
+}
+
+// Dopamine Logs
+export async function startDopamineLog(categoryId: number): Promise<number> {
+  return window.electronAPI.startDopamineLog(categoryId);
+}
+export async function stopDopamineLog(logId: number): Promise<DopamineLog> {
+  return window.electronAPI.stopDopamineLog(logId);
+}
+export async function getActiveDopamineLog(): Promise<DopamineLog | null> {
+  return window.electronAPI.getActiveDopamineLog();
+}
+export async function getDopamineLogsForDate(date: string): Promise<DopamineLog[]> {
+  return window.electronAPI.getDopamineLogsForDate(date);
+}
+
+// Abstinence Timers
+export async function startAbstinenceTimer(categoryId: number): Promise<number> {
+  return window.electronAPI.startAbstinenceTimer(categoryId);
+}
+export async function getAbstinenceTimersForDate(date: string): Promise<AbstinenceTimer[]> {
+  return window.electronAPI.getAbstinenceTimersForDate(date);
+}
+export async function finalizeDay(date: string): Promise<void> {
+  return window.electronAPI.finalizeDay(date);
+}
+
+// Dopamine Daily
+export async function getDopamineDaily(date: string): Promise<DopamineDaily | null> {
+  return window.electronAPI.getDopamineDaily(date);
+}
+export async function getDopamineDailyRange(days: number): Promise<DopamineDaily[]> {
+  return window.electronAPI.getDopamineDailyRange(days);
 }

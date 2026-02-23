@@ -7,6 +7,14 @@ interface HeroStatusProps {
   onNameUpdate: (name: string) => void
 }
 
+function getToleranceEmoji(tolerance: number): string {
+  if (tolerance <= 20) return '🧘'
+  if (tolerance <= 40) return '✨'
+  if (tolerance <= 60) return '😐'
+  if (tolerance <= 80) return '😵‍💫'
+  return '🤯'
+}
+
 function getTitle(level: number): string {
   if (level >= 21) return '전설의 용사'
   if (level >= 11) return '엘리트 기사'
@@ -27,7 +35,7 @@ function getXpInCurrentLevel(totalXp: number, level: number): number {
 }
 
 function HeroStatus({ settings, quests, onNameUpdate }: HeroStatusProps) {
-  const { playerName, level, totalXp, currentStreak, lastActiveDate } = settings
+  const { playerName, level, totalXp, currentStreak, lastActiveDate, dopamineTolerance, statWillpower, statFocus } = settings
   const title = getTitle(level)
   const xpForNext = getXpForNextLevel(level)
   const xpInLevel = getXpInCurrentLevel(totalXp, level)
@@ -124,6 +132,20 @@ function HeroStatus({ settings, quests, onNameUpdate }: HeroStatusProps) {
               {todayCompleted}<span className="text-gray-500">/{totalIncomplete + todayCompleted}</span>
             </div>
             <div className="text-xs text-gray-500">오늘 완료</div>
+          </div>
+
+          {/* Dopamine stats */}
+          <div className="text-center border-l border-gray-700 pl-4">
+            <div className="text-lg">{getToleranceEmoji(dopamineTolerance)}</div>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className={`text-xs font-medium ${statWillpower > 0 ? 'text-blue-400' : statWillpower < 0 ? 'text-red-400' : 'text-gray-500'}`}>
+                💪{statWillpower > 0 ? '+' : ''}{statWillpower}
+              </span>
+              <span className={`text-xs font-medium ${statFocus > 0 ? 'text-cyan-400' : statFocus < 0 ? 'text-red-400' : 'text-gray-500'}`}>
+                🎯{statFocus > 0 ? '+' : ''}{statFocus}
+              </span>
+            </div>
+            <div className="text-xs text-gray-500">도파민</div>
           </div>
         </div>
       </div>

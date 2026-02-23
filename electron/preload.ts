@@ -68,4 +68,36 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Sync: 동기화 상태 조회
   getSyncStatus: () => ipcRenderer.invoke('sync:status'),
+
+  // Dopamine Categories
+  getDopamineCategories: () => ipcRenderer.invoke('dopamine:getCategories'),
+  addDopamineCategory: (cat: Record<string, unknown>) =>
+    ipcRenderer.invoke('dopamine:addCategory', cat),
+  updateDopamineCategory: (cat: Record<string, unknown>) =>
+    ipcRenderer.invoke('dopamine:updateCategory', cat),
+  deleteDopamineCategory: (id: number) =>
+    ipcRenderer.invoke('dopamine:deleteCategory', id),
+
+  // Dopamine Logs
+  startDopamineLog: (categoryId: number) =>
+    ipcRenderer.invoke('dopamine:startLog', categoryId),
+  stopDopamineLog: (logId: number) =>
+    ipcRenderer.invoke('dopamine:stopLog', logId),
+  getActiveDopamineLog: () => ipcRenderer.invoke('dopamine:getActiveLog'),
+  getDopamineLogsForDate: (date: string) =>
+    ipcRenderer.invoke('dopamine:getLogsForDate', date),
+
+  // Abstinence Timers
+  startAbstinenceTimer: (categoryId: number) =>
+    ipcRenderer.invoke('dopamine:startAbstinence', categoryId),
+  getAbstinenceTimersForDate: (date: string) =>
+    ipcRenderer.invoke('dopamine:getAbstinenceTimers', date),
+  finalizeDay: (date: string) =>
+    ipcRenderer.invoke('dopamine:finalizeDay', date),
+
+  // Dopamine Daily
+  getDopamineDaily: (date: string) =>
+    ipcRenderer.invoke('dopamine:getDaily', date),
+  getDopamineDailyRange: (days: number) =>
+    ipcRenderer.invoke('dopamine:getDailyRange', days),
 });

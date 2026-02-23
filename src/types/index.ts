@@ -9,6 +9,11 @@ export interface Settings {
   currentStreak: number;
   longestStreak: number;
   lastActiveDate: string | null;
+  // Dopamine stats
+  dopamineTolerance: number;
+  statWillpower: number;
+  statFocus: number;
+  abstinenceStreak: number;
 }
 
 export interface Quest {
@@ -40,4 +45,51 @@ export interface DailyLog {
   date: string;
   questsCompleted: number;
   xpEarned: number;
+}
+
+export interface DopamineCategory {
+  id: number;
+  name: string;
+  icon: string;
+  toleranceRate: number;
+  isPreset: boolean;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export interface DopamineLog {
+  id: number;
+  categoryId: number;
+  startedAt: string;
+  endedAt: string | null;
+  durationMin: number | null;
+  toleranceGain: number | null;
+  date: string;
+}
+
+export interface AbstinenceTimer {
+  id: number;
+  categoryId: number;
+  date: string;
+  startedAt: string;
+  brokenAt: string | null;
+  isSuccess: boolean;
+  categoryName: string;
+  categoryIcon: string;
+}
+
+export interface DopamineDaily {
+  date: string;
+  toleranceStart: number;
+  toleranceEnd: number;
+  totalUsageMin: number;
+  abstinenceSuccess: number;
+  abstinenceTotal: number;
+}
+
+export interface ToleranceState {
+  name: string;
+  willpower: number;
+  focus: number;
+  xpMultiplier: number;
 }

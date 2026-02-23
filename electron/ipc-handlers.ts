@@ -13,6 +13,10 @@ import {
   addMilestone,
   updateMilestone,
   deleteMilestone,
+  getDopamineCategories, addDopamineCategory, updateDopamineCategory, deleteDopamineCategory,
+  startDopamineLog, stopDopamineLog, getActiveDopamineLog, getDopamineLogsForDate,
+  startAbstinenceTimer, getAbstinenceTimersForDate, finalizeDay,
+  getDopamineDaily, getDopamineDailyRange,
 } from './database';
 
 // ─── Field mapping helpers ────────────────────────────────────────────────────
@@ -124,5 +128,48 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('db:deleteMilestone', (_event: IpcMainInvokeEvent, id: number) =>
     deleteMilestone(id),
+  );
+
+  // ── Dopamine Categories ──────────────────────────────────────────────────
+  ipcMain.handle('dopamine:getCategories', () => getDopamineCategories());
+  ipcMain.handle('dopamine:addCategory', (_event: IpcMainInvokeEvent, cat: Record<string, unknown>) =>
+    addDopamineCategory(cat as Parameters<typeof addDopamineCategory>[0])
+  );
+  ipcMain.handle('dopamine:updateCategory', (_event: IpcMainInvokeEvent, cat: Record<string, unknown>) =>
+    updateDopamineCategory(cat as Parameters<typeof updateDopamineCategory>[0])
+  );
+  ipcMain.handle('dopamine:deleteCategory', (_event: IpcMainInvokeEvent, id: number) =>
+    deleteDopamineCategory(id)
+  );
+
+  // ── Dopamine Logs ────────────────────────────────────────────────────────
+  ipcMain.handle('dopamine:startLog', (_event: IpcMainInvokeEvent, categoryId: number) =>
+    startDopamineLog(categoryId)
+  );
+  ipcMain.handle('dopamine:stopLog', (_event: IpcMainInvokeEvent, logId: number) =>
+    stopDopamineLog(logId)
+  );
+  ipcMain.handle('dopamine:getActiveLog', () => getActiveDopamineLog());
+  ipcMain.handle('dopamine:getLogsForDate', (_event: IpcMainInvokeEvent, date: string) =>
+    getDopamineLogsForDate(date)
+  );
+
+  // ── Abstinence Timers ────────────────────────────────────────────────────
+  ipcMain.handle('dopamine:startAbstinence', (_event: IpcMainInvokeEvent, categoryId: number) =>
+    startAbstinenceTimer(categoryId)
+  );
+  ipcMain.handle('dopamine:getAbstinenceTimers', (_event: IpcMainInvokeEvent, date: string) =>
+    getAbstinenceTimersForDate(date)
+  );
+  ipcMain.handle('dopamine:finalizeDay', (_event: IpcMainInvokeEvent, date: string) =>
+    finalizeDay(date)
+  );
+
+  // ── Dopamine Daily ───────────────────────────────────────────────────────
+  ipcMain.handle('dopamine:getDaily', (_event: IpcMainInvokeEvent, date: string) =>
+    getDopamineDaily(date)
+  );
+  ipcMain.handle('dopamine:getDailyRange', (_event: IpcMainInvokeEvent, days: number) =>
+    getDopamineDailyRange(days)
   );
 }

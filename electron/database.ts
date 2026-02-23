@@ -16,6 +16,10 @@ interface SettingsRow {
   current_streak: number;
   longest_streak: number;
   last_active_date: string | null;
+  dopamine_tolerance: number;
+  stat_willpower: number;
+  stat_focus: number;
+  abstinence_streak: number;
   updated_at: string;
 }
 
@@ -60,6 +64,10 @@ interface CamelSettings {
   currentStreak: number;
   longestStreak: number;
   lastActiveDate: string | null;
+  dopamineTolerance: number;
+  statWillpower: number;
+  statFocus: number;
+  abstinenceStreak: number;
 }
 
 interface CamelQuest {
@@ -141,6 +149,86 @@ interface JsonDatabase {
   }>;
 }
 
+interface DopamineCategoryRow {
+  id: number;
+  name: string;
+  icon: string;
+  tolerance_rate: number;
+  is_preset: number;
+  is_active: number;
+  sort_order: number;
+  updated_at: string;
+}
+
+interface CamelDopamineCategory {
+  id: number;
+  name: string;
+  icon: string;
+  toleranceRate: number;
+  isPreset: boolean;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+interface DopamineLogRow {
+  id: number;
+  category_id: number;
+  started_at: string;
+  ended_at: string | null;
+  duration_min: number | null;
+  tolerance_gain: number | null;
+  date: string;
+  updated_at: string;
+}
+
+interface CamelDopamineLog {
+  id: number;
+  categoryId: number;
+  startedAt: string;
+  endedAt: string | null;
+  durationMin: number | null;
+  toleranceGain: number | null;
+  date: string;
+}
+
+interface AbstinenceTimerRow {
+  id: number;
+  category_id: number;
+  date: string;
+  started_at: string;
+  broken_at: string | null;
+  is_success: number;
+  updated_at: string;
+}
+
+interface CamelAbstinenceTimer {
+  id: number;
+  categoryId: number;
+  date: string;
+  startedAt: string;
+  brokenAt: string | null;
+  isSuccess: boolean;
+}
+
+interface DopamineDailyRow {
+  date: string;
+  tolerance_start: number;
+  tolerance_end: number;
+  total_usage_min: number;
+  abstinence_success: number;
+  abstinence_total: number;
+  updated_at: string;
+}
+
+interface CamelDopamineDaily {
+  date: string;
+  toleranceStart: number;
+  toleranceEnd: number;
+  totalUsageMin: number;
+  abstinenceSuccess: number;
+  abstinenceTotal: number;
+}
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const DIFFICULTY_XP: Record<string, number> = {
@@ -149,6 +237,32 @@ const DIFFICULTY_XP: Record<string, number> = {
   hard: 200,
   epic: 500,
 };
+
+const TOLERANCE_STATES = [
+  { max: 20, name: '각성 상태', willpower: 3, focus: 3, xpMultiplier: 1.0 },
+  { max: 40, name: '맑은 정신', willpower: 2, focus: 2, xpMultiplier: 1.0 },
+  { max: 60, name: '보통', willpower: 0, focus: 0, xpMultiplier: 1.0 },
+  { max: 80, name: '흐릿한 정신', willpower: -1, focus: -1, xpMultiplier: 1.0 },
+  { max: 100, name: '도파민 과부하', willpower: -2, focus: -2, xpMultiplier: 0.8 },
+];
+
+const QUEST_TOLERANCE_REDUCTION: Record<string, number> = {
+  easy: -2, normal: -3, hard: -4, epic: -5,
+};
+
+function getToleranceState(tolerance: number) {
+  const clamped = Math.max(0, Math.min(100, tolerance));
+  return TOLERANCE_STATES.find(s => clamped <= s.max) || TOLERANCE_STATES[TOLERANCE_STATES.length - 1];
+}
+
+function recalcStats(database: ReturnType<typeof getDb>, tolerance: number): void {
+  const state = getToleranceState(tolerance);
+  database
+    .prepare(
+      `UPDATE settings SET dopamine_tolerance = ?, stat_willpower = ?, stat_focus = ?, updated_at = datetime('now') WHERE id = 1`
+    )
+    .run(Math.max(0, Math.min(100, tolerance)), state.willpower, state.focus);
+}
 
 // ─── Singleton ───────────────────────────────────────────────────────────────
 
@@ -167,6 +281,10 @@ function settingsToCamel(row: SettingsRow): CamelSettings {
     currentStreak: row.current_streak,
     longestStreak: row.longest_streak,
     lastActiveDate: row.last_active_date,
+    dopamineTolerance: row.dopamine_tolerance,
+    statWillpower: row.stat_willpower,
+    statFocus: row.stat_focus,
+    abstinenceStreak: row.abstinence_streak,
   };
 }
 
@@ -204,6 +322,41 @@ function dailyLogToCamel(row: DailyLogRow): CamelDailyLog {
   };
 }
 
+function dopamineCategoryToCamel(row: DopamineCategoryRow): CamelDopamineCategory {
+  return {
+    id: row.id, name: row.name, icon: row.icon,
+    toleranceRate: row.tolerance_rate,
+    isPreset: Boolean(row.is_preset),
+    isActive: Boolean(row.is_active),
+    sortOrder: row.sort_order,
+  };
+}
+
+function dopamineLogToCamel(row: DopamineLogRow): CamelDopamineLog {
+  return {
+    id: row.id, categoryId: row.category_id,
+    startedAt: row.started_at, endedAt: row.ended_at,
+    durationMin: row.duration_min, toleranceGain: row.tolerance_gain,
+    date: row.date,
+  };
+}
+
+function abstinenceTimerToCamel(row: AbstinenceTimerRow): CamelAbstinenceTimer {
+  return {
+    id: row.id, categoryId: row.category_id,
+    date: row.date, startedAt: row.started_at,
+    brokenAt: row.broken_at, isSuccess: Boolean(row.is_success),
+  };
+}
+
+function dopamineDailyToCamel(row: DopamineDailyRow): CamelDopamineDaily {
+  return {
+    date: row.date, toleranceStart: row.tolerance_start,
+    toleranceEnd: row.tolerance_end, totalUsageMin: row.total_usage_min,
+    abstinenceSuccess: row.abstinence_success, abstinenceTotal: row.abstinence_total,
+  };
+}
+
 /** camelCase 설정 객체를 snake_case 컬럼 매핑으로 변환 */
 function settingsToSnake(
   settings: Partial<CamelSettings>,
@@ -218,6 +371,10 @@ function settingsToSnake(
     currentStreak: 'current_streak',
     longestStreak: 'longest_streak',
     lastActiveDate: 'last_active_date',
+    dopamineTolerance: 'dopamine_tolerance',
+    statWillpower: 'stat_willpower',
+    statFocus: 'stat_focus',
+    abstinenceStreak: 'abstinence_streak',
   };
 
   const result: Record<string, unknown> = {};
@@ -244,6 +401,10 @@ const SCHEMA = `
     current_streak INTEGER NOT NULL DEFAULT 0,
     longest_streak INTEGER NOT NULL DEFAULT 0,
     last_active_date TEXT,
+    dopamine_tolerance REAL NOT NULL DEFAULT 50,
+    stat_willpower INTEGER NOT NULL DEFAULT 0,
+    stat_focus INTEGER NOT NULL DEFAULT 0,
+    abstinence_streak INTEGER NOT NULL DEFAULT 0,
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
@@ -287,6 +448,48 @@ const SCHEMA = `
     is_deleted INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (table_name, local_id)
   );
+
+  CREATE TABLE IF NOT EXISTS dopamine_categories (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    name            TEXT NOT NULL,
+    icon            TEXT NOT NULL,
+    tolerance_rate  REAL NOT NULL DEFAULT 0.2,
+    is_preset       INTEGER NOT NULL DEFAULT 0,
+    is_active       INTEGER NOT NULL DEFAULT 1,
+    sort_order      INTEGER NOT NULL DEFAULT 0,
+    updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS dopamine_logs (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    category_id     INTEGER NOT NULL REFERENCES dopamine_categories(id),
+    started_at      TEXT NOT NULL,
+    ended_at        TEXT,
+    duration_min    REAL,
+    tolerance_gain  REAL,
+    date            TEXT NOT NULL,
+    updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS abstinence_timers (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    category_id     INTEGER NOT NULL REFERENCES dopamine_categories(id),
+    date            TEXT NOT NULL,
+    started_at      TEXT NOT NULL,
+    broken_at       TEXT,
+    is_success      INTEGER NOT NULL DEFAULT 0,
+    updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS dopamine_daily (
+    date                TEXT PRIMARY KEY,
+    tolerance_start     REAL NOT NULL,
+    tolerance_end       REAL NOT NULL,
+    total_usage_min     REAL NOT NULL DEFAULT 0,
+    abstinence_success  INTEGER NOT NULL DEFAULT 0,
+    abstinence_total    INTEGER NOT NULL DEFAULT 0,
+    updated_at          TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `;
 
 // ─── Database Lifecycle ──────────────────────────────────────────────────────
@@ -307,6 +510,9 @@ export function initDatabase(): void {
 
   // JSON 파일에서 마이그레이션
   migrateFromJson();
+
+  // 도파민 카테고리 기본값 시드
+  seedDopamineCategories();
 }
 
 /** better-sqlite3 Database 인스턴스 싱글톤 getter */
@@ -434,6 +640,30 @@ export function migrateFromJson(): void {
   });
 
   migrate();
+}
+
+// ─── Dopamine Categories Seed ─────────────────────────────────────────────────
+
+function seedDopamineCategories(): void {
+  const database = getDb();
+  const count = database.prepare('SELECT COUNT(*) as cnt FROM dopamine_categories').get() as { cnt: number };
+  if (count.cnt > 0) return;
+
+  const presets = [
+    { name: 'SNS', icon: '📱', tolerance_rate: 0.15, sort_order: 0 },
+    { name: '영상', icon: '📺', tolerance_rate: 0.2, sort_order: 1 },
+    { name: '게임', icon: '🎮', tolerance_rate: 0.25, sort_order: 2 },
+    { name: '쇼츠/릴스', icon: '📳', tolerance_rate: 0.3, sort_order: 3 },
+    { name: '쇼핑', icon: '🛒', tolerance_rate: 0.15, sort_order: 4 },
+    { name: '음주/야식', icon: '🍺', tolerance_rate: 0.2, sort_order: 5 },
+  ];
+
+  const insert = database.prepare(
+    `INSERT INTO dopamine_categories (name, icon, tolerance_rate, is_preset, is_active, sort_order) VALUES (?, ?, ?, 1, 1, ?)`
+  );
+  for (const p of presets) {
+    insert.run(p.name, p.icon, p.tolerance_rate, p.sort_order);
+  }
 }
 
 // ─── Sync Meta ───────────────────────────────────────────────────────────────
@@ -683,6 +913,11 @@ export function completeQuest(id: number): CompleteQuestResult | null {
       )
       .run(newTotalXp, newLevel, currentStreak, longestStreak, today);
 
+    // Dopamine: reduce tolerance on quest completion
+    const toleranceReduction = QUEST_TOLERANCE_REDUCTION[quest.difficulty] ?? -3;
+    const currentTolerance = (settingsRow as unknown as { dopamine_tolerance: number }).dopamine_tolerance ?? 50;
+    recalcStats(database, Math.max(0, currentTolerance + toleranceReduction));
+
     // 5. daily_log upsert
     database
       .prepare(
@@ -812,4 +1047,203 @@ export function deleteMilestone(id: number): void {
     .run('milestones', id);
 }
 
-export { DIFFICULTY_XP };
+// ─── Dopamine Categories ────────────────────────────────────────────────
+
+export function getDopamineCategories(): CamelDopamineCategory[] {
+  const database = getDb();
+  const rows = database
+    .prepare('SELECT * FROM dopamine_categories WHERE is_active = 1 ORDER BY sort_order ASC')
+    .all() as DopamineCategoryRow[];
+  return rows.map(dopamineCategoryToCamel);
+}
+
+export function addDopamineCategory(cat: { name: string; icon: string; toleranceRate: number }): number {
+  const database = getDb();
+  const maxOrder = database
+    .prepare('SELECT COALESCE(MAX(sort_order), -1) + 1 as next_order FROM dopamine_categories')
+    .get() as { next_order: number };
+  const result = database
+    .prepare(
+      `INSERT INTO dopamine_categories (name, icon, tolerance_rate, is_preset, is_active, sort_order) VALUES (?, ?, ?, 0, 1, ?)`
+    )
+    .run(cat.name, cat.icon, cat.toleranceRate, maxOrder.next_order);
+  return Number(result.lastInsertRowid);
+}
+
+export function updateDopamineCategory(cat: { id: number; name?: string; icon?: string; toleranceRate?: number; isActive?: boolean }): void {
+  const database = getDb();
+  database
+    .prepare(
+      `UPDATE dopamine_categories SET
+         name = COALESCE(?, name), icon = COALESCE(?, icon),
+         tolerance_rate = COALESCE(?, tolerance_rate),
+         is_active = COALESCE(?, is_active),
+         updated_at = datetime('now')
+       WHERE id = ?`
+    )
+    .run(cat.name ?? null, cat.icon ?? null, cat.toleranceRate ?? null,
+      cat.isActive !== undefined ? (cat.isActive ? 1 : 0) : null, cat.id);
+}
+
+export function deleteDopamineCategory(id: number): void {
+  const database = getDb();
+  database.prepare('DELETE FROM dopamine_categories WHERE id = ? AND is_preset = 0').run(id);
+}
+
+// ─── Dopamine Logs ──────────────────────────────────────────────────────────
+
+export function startDopamineLog(categoryId: number): number {
+  const database = getDb();
+  const now = new Date().toISOString();
+  const today = now.split('T')[0];
+  const result = database
+    .prepare(`INSERT INTO dopamine_logs (category_id, started_at, date) VALUES (?, ?, ?)`)
+    .run(categoryId, now, today);
+
+  // Break any active abstinence timer for this category today
+  database
+    .prepare(
+      `UPDATE abstinence_timers SET broken_at = ?, updated_at = datetime('now')
+       WHERE category_id = ? AND date = ? AND broken_at IS NULL AND is_success = 0`
+    )
+    .run(now, categoryId, today);
+
+  return Number(result.lastInsertRowid);
+}
+
+export function stopDopamineLog(logId: number): CamelDopamineLog | null {
+  const database = getDb();
+  const row = database.prepare('SELECT * FROM dopamine_logs WHERE id = ?').get(logId) as DopamineLogRow | undefined;
+  if (!row || row.ended_at) return null;
+
+  const now = new Date().toISOString();
+  const durationMin = (new Date(now).getTime() - new Date(row.started_at).getTime()) / (1000 * 60);
+  const cat = database.prepare('SELECT tolerance_rate FROM dopamine_categories WHERE id = ?').get(row.category_id) as { tolerance_rate: number } | undefined;
+  const rate = cat?.tolerance_rate ?? 0.2;
+  const toleranceGain = Math.round(durationMin * rate * 100) / 100;
+
+  database
+    .prepare(`UPDATE dopamine_logs SET ended_at = ?, duration_min = ?, tolerance_gain = ?, updated_at = datetime('now') WHERE id = ?`)
+    .run(now, Math.round(durationMin * 100) / 100, toleranceGain, logId);
+
+  const settings = database.prepare('SELECT dopamine_tolerance FROM settings WHERE id = 1').get() as { dopamine_tolerance: number };
+  const newTolerance = Math.min(100, (settings.dopamine_tolerance ?? 50) + toleranceGain);
+  recalcStats(database, newTolerance);
+
+  markDirty('dopamine_logs', logId);
+  markDirty('settings', 1);
+
+  return dopamineLogToCamel(database.prepare('SELECT * FROM dopamine_logs WHERE id = ?').get(logId) as DopamineLogRow);
+}
+
+export function getActiveDopamineLog(): CamelDopamineLog | null {
+  const database = getDb();
+  const row = database
+    .prepare('SELECT * FROM dopamine_logs WHERE ended_at IS NULL ORDER BY started_at DESC LIMIT 1')
+    .get() as DopamineLogRow | undefined;
+  return row ? dopamineLogToCamel(row) : null;
+}
+
+export function getDopamineLogsForDate(date: string): CamelDopamineLog[] {
+  const database = getDb();
+  const rows = database
+    .prepare('SELECT * FROM dopamine_logs WHERE date = ? ORDER BY started_at DESC')
+    .all(date) as DopamineLogRow[];
+  return rows.map(dopamineLogToCamel);
+}
+
+// ─── Abstinence Timers ──────────────────────────────────────────────────────
+
+export function startAbstinenceTimer(categoryId: number): number {
+  const database = getDb();
+  const now = new Date().toISOString();
+  const today = now.split('T')[0];
+  const existing = database
+    .prepare('SELECT id FROM abstinence_timers WHERE category_id = ? AND date = ?')
+    .get(categoryId, today) as { id: number } | undefined;
+  if (existing) return existing.id;
+
+  const result = database
+    .prepare(`INSERT INTO abstinence_timers (category_id, date, started_at) VALUES (?, ?, ?)`)
+    .run(categoryId, today, now);
+  return Number(result.lastInsertRowid);
+}
+
+export function getAbstinenceTimersForDate(date: string): (CamelAbstinenceTimer & { categoryName: string; categoryIcon: string })[] {
+  const database = getDb();
+  const rows = database
+    .prepare(
+      `SELECT at.*, dc.name as category_name, dc.icon as category_icon
+       FROM abstinence_timers at
+       JOIN dopamine_categories dc ON at.category_id = dc.id
+       WHERE at.date = ?
+       ORDER BY dc.sort_order ASC`
+    )
+    .all(date) as (AbstinenceTimerRow & { category_name: string; category_icon: string })[];
+  return rows.map(row => ({
+    ...abstinenceTimerToCamel(row),
+    categoryName: row.category_name,
+    categoryIcon: row.category_icon,
+  }));
+}
+
+export function finalizeDay(date: string): void {
+  const database = getDb();
+  const doFinalize = database.transaction(() => {
+    const settings = database.prepare('SELECT * FROM settings WHERE id = 1').get() as SettingsRow & {
+      dopamine_tolerance: number; abstinence_streak: number;
+    };
+    const toleranceStart = settings.dopamine_tolerance ?? 50;
+
+    database.prepare(
+      `UPDATE abstinence_timers SET is_success = 1, updated_at = datetime('now') WHERE date = ? AND broken_at IS NULL AND is_success = 0`
+    ).run(date);
+
+    const timerStats = database.prepare(
+      `SELECT COUNT(*) as total, SUM(CASE WHEN is_success = 1 THEN 1 ELSE 0 END) as successes FROM abstinence_timers WHERE date = ?`
+    ).get(date) as { total: number; successes: number };
+
+    let toleranceChange = 0;
+    const logCount = database.prepare('SELECT COUNT(*) as cnt FROM dopamine_logs WHERE date = ?').get(date) as { cnt: number };
+    if (logCount.cnt === 0) toleranceChange -= 3;
+    toleranceChange -= (timerStats.successes ?? 0) * 2;
+
+    const usageStats = database.prepare(
+      'SELECT COALESCE(SUM(duration_min), 0) as total_min FROM dopamine_logs WHERE date = ? AND ended_at IS NOT NULL'
+    ).get(date) as { total_min: number };
+
+    const newTolerance = Math.max(0, Math.min(100, toleranceStart + toleranceChange));
+
+    let newStreak = settings.abstinence_streak ?? 0;
+    if (timerStats.total > 0 && timerStats.successes === timerStats.total) {
+      newStreak += 1;
+    } else if (timerStats.total > 0) {
+      newStreak = 0;
+    }
+
+    database.prepare(
+      `INSERT INTO dopamine_daily (date, tolerance_start, tolerance_end, total_usage_min, abstinence_success, abstinence_total)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(date) DO UPDATE SET tolerance_end = ?, total_usage_min = ?, abstinence_success = ?, abstinence_total = ?, updated_at = datetime('now')`
+    ).run(date, toleranceStart, newTolerance, usageStats.total_min, timerStats.successes ?? 0, timerStats.total ?? 0,
+      newTolerance, usageStats.total_min, timerStats.successes ?? 0, timerStats.total ?? 0);
+
+    database.prepare(`UPDATE settings SET abstinence_streak = ?, updated_at = datetime('now') WHERE id = 1`).run(newStreak);
+    recalcStats(database, newTolerance);
+  });
+  doFinalize();
+}
+
+export function getDopamineDaily(date: string): CamelDopamineDaily | null {
+  const database = getDb();
+  const row = database.prepare('SELECT * FROM dopamine_daily WHERE date = ?').get(date) as DopamineDailyRow | undefined;
+  return row ? dopamineDailyToCamel(row) : null;
+}
+
+export function getDopamineDailyRange(days: number): CamelDopamineDaily[] {
+  const database = getDb();
+  const rows = database.prepare('SELECT * FROM dopamine_daily ORDER BY date DESC LIMIT ?').all(days) as DopamineDailyRow[];
+  return rows.map(dopamineDailyToCamel);
+}
+
+export { DIFFICULTY_XP, TOLERANCE_STATES, getToleranceState };
