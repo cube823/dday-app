@@ -508,11 +508,34 @@ export function initDatabase(): void {
   // 테이블 생성
   db.exec(SCHEMA);
 
+  // 기존 DB에 도파민 컬럼이 없는 경우 마이그레이션
+  migrateDopamineColumns();
+
   // JSON 파일에서 마이그레이션
   migrateFromJson();
 
   // 도파민 카테고리 기본값 시드
   seedDopamineCategories();
+}
+
+/** 기존 settings 테이블에 도파민 컬럼이 없으면 추가 */
+function migrateDopamineColumns(): void {
+  const database = getDb();
+  const columns = database.pragma('table_info(settings)') as Array<{ name: string }>;
+  const colNames = columns.map(c => c.name);
+
+  const migrations = [
+    { col: 'dopamine_tolerance', sql: 'ALTER TABLE settings ADD COLUMN dopamine_tolerance REAL NOT NULL DEFAULT 50' },
+    { col: 'stat_willpower', sql: 'ALTER TABLE settings ADD COLUMN stat_willpower INTEGER NOT NULL DEFAULT 0' },
+    { col: 'stat_focus', sql: 'ALTER TABLE settings ADD COLUMN stat_focus INTEGER NOT NULL DEFAULT 0' },
+    { col: 'abstinence_streak', sql: 'ALTER TABLE settings ADD COLUMN abstinence_streak INTEGER NOT NULL DEFAULT 0' },
+  ];
+
+  for (const m of migrations) {
+    if (!colNames.includes(m.col)) {
+      database.exec(m.sql);
+    }
+  }
 }
 
 /** better-sqlite3 Database 인스턴스 싱글톤 getter */

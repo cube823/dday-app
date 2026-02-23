@@ -9,12 +9,13 @@ const DEV_SERVER_URL = 'http://localhost:5173';
 
 let mainWindow: BrowserWindow | null = null;
 
-function waitForDevServer(url: string, timeout = 30000): Promise<void> {
+function waitForDevServer(url: string, timeout = 60000): Promise<void> {
   const start = Date.now();
   return new Promise((resolve, reject) => {
     const check = () => {
       const req = http.get(url, (res) => {
-        if (res.statusCode === 200) {
+        const status = res.statusCode ?? 0;
+        if (status >= 200 && status < 400) {
           resolve();
         } else {
           retry();
@@ -28,7 +29,7 @@ function waitForDevServer(url: string, timeout = 30000): Promise<void> {
         reject(new Error('Dev server did not start in time'));
         return;
       }
-      setTimeout(check, 500);
+      setTimeout(check, 1000);
     };
     check();
   });
