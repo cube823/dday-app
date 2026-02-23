@@ -4,17 +4,44 @@ import DDay from './components/DDay'
 import DailyQuest from './components/DailyQuest'
 import QuestBoard from './components/QuestBoard'
 import Runway from './components/Runway'
+import Auth from './components/Auth'
 import { Settings, Quest } from './types'
 import * as api from './api/client'
 
 function App() {
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null)
   const [settings, setSettings] = useState<Settings | null>(null)
   const [quests, setQuests] = useState<Quest[]>([])
   const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
-    loadSettings()
+    checkAuth()
   }, [])
+
+  const checkAuth = async () => {
+    try {
+      const result = await window.electronAPI.getSession()
+      if (result.success && result.data) {
+        setAuthenticated(true)
+        loadSettings()
+      } else {
+        setAuthenticated(false)
+      }
+    } catch {
+      // Supabase 미설정 또는 오프라인 - 인증 화면 표시
+      setAuthenticated(false)
+    }
+  }
+
+  const handleAuthSuccess = () => {
+    setAuthenticated(true)
+    loadSettings()
+  }
+
+  const handleSkipAuth = () => {
+    setAuthenticated(true)
+    loadSettings()
+  }
 
   const loadSettings = async () => {
     try {
@@ -47,11 +74,28 @@ function App() {
     setQuests(loadedQuests)
   }, [])
 
-  if (!settings) {
+  // 인증 상태 확인 중
+  if (authenticated === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900">
         <div className="text-center">
           <div className="text-xl mb-4">로딩 중...</div>
+        </div>
+      </div>
+    )
+  }
+
+  // 미인증 상태 → Auth 화면
+  if (!authenticated) {
+    return <Auth onAuthSuccess={handleAuthSuccess} onSkipAuth={handleSkipAuth} />
+  }
+
+  // 설정 로딩 대기
+  if (!settings) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="text-center">
+          <div className="text-xl mb-4">데이터 불러오는 중...</div>
         </div>
       </div>
     )

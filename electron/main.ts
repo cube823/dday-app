@@ -2,6 +2,8 @@ import { app, BrowserWindow } from 'electron';
 import http from 'http';
 import path from 'path';
 import { registerIpcHandlers } from './ipc-handlers';
+import { registerAuthHandlers } from './auth-handlers';
+import { initDatabase, closeDb } from './database';
 
 const DEV_SERVER_URL = 'http://localhost:5173';
 
@@ -61,7 +63,9 @@ async function createWindow() {
 }
 
 app.whenReady().then(() => {
+  initDatabase();
   registerIpcHandlers();
+  registerAuthHandlers();
   createWindow();
 
   app.on('activate', () => {
@@ -75,4 +79,8 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+app.on('before-quit', () => {
+  closeDb();
 });

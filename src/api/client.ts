@@ -1,5 +1,18 @@
 import { Settings, Quest, Milestone, DailyLog } from '../types';
 
+export interface AuthResponse {
+  success: boolean;
+  data?: unknown;
+  error?: string;
+}
+
+export interface SyncStatus {
+  lastSyncedAt: string | null;
+  pendingChanges: number;
+  isOnline: boolean;
+  isSyncing: boolean;
+}
+
 // Electron IPC bridge type
 declare global {
   interface Window {
@@ -17,6 +30,20 @@ declare global {
       addMilestone: (milestone: Omit<Milestone, 'id'>) => Promise<number>;
       updateMilestone: (milestone: Milestone) => Promise<void>;
       deleteMilestone: (id: number) => Promise<void>;
+      // Auth
+      signUp: (email: string, password: string) => Promise<AuthResponse>;
+      signIn: (email: string, password: string) => Promise<AuthResponse>;
+      signInWithOAuth: (provider: string) => Promise<AuthResponse>;
+      signOut: () => Promise<AuthResponse>;
+      getSession: () => Promise<AuthResponse>;
+      getUser: () => Promise<AuthResponse>;
+      isSupabaseConfigured: () => Promise<AuthResponse>;
+      initSupabase: (url: string, anonKey: string) => Promise<AuthResponse>;
+      // Sync
+      startSync: () => Promise<void>;
+      stopSync: () => Promise<void>;
+      syncNow: () => Promise<void>;
+      getSyncStatus: () => Promise<SyncStatus>;
     };
   }
 }
@@ -97,4 +124,54 @@ export async function updateMilestone(milestone: Milestone): Promise<void> {
 
 export async function deleteMilestone(id: number): Promise<void> {
   await window.electronAPI.deleteMilestone(id);
+}
+
+// Auth API
+export async function authSignUp(email: string, password: string): Promise<AuthResponse> {
+  return window.electronAPI.signUp(email, password);
+}
+
+export async function authSignIn(email: string, password: string): Promise<AuthResponse> {
+  return window.electronAPI.signIn(email, password);
+}
+
+export async function authSignInWithOAuth(provider: string): Promise<AuthResponse> {
+  return window.electronAPI.signInWithOAuth(provider);
+}
+
+export async function authSignOut(): Promise<AuthResponse> {
+  return window.electronAPI.signOut();
+}
+
+export async function authGetSession(): Promise<AuthResponse> {
+  return window.electronAPI.getSession();
+}
+
+export async function authGetUser(): Promise<AuthResponse> {
+  return window.electronAPI.getUser();
+}
+
+export async function authIsConfigured(): Promise<AuthResponse> {
+  return window.electronAPI.isSupabaseConfigured();
+}
+
+export async function authInitSupabase(url: string, anonKey: string): Promise<AuthResponse> {
+  return window.electronAPI.initSupabase(url, anonKey);
+}
+
+// Sync API
+export async function syncStart(): Promise<void> {
+  await window.electronAPI.startSync();
+}
+
+export async function syncStop(): Promise<void> {
+  await window.electronAPI.stopSync();
+}
+
+export async function syncNow(): Promise<void> {
+  await window.electronAPI.syncNow();
+}
+
+export async function getSyncStatus(): Promise<SyncStatus> {
+  return window.electronAPI.getSyncStatus();
 }

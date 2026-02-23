@@ -35,3 +35,6 @@ data/
 *.db
 *.db-shm
 *.db-wal
+
+# OMC sessions
+.omc/

@@ -28,4 +28,44 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('db:updateMilestone', milestone),
   deleteMilestone: (id: number) =>
     ipcRenderer.invoke('db:deleteMilestone', id),
+
+  // Auth: 회원가입
+  signUp: (email: string, password: string) =>
+    ipcRenderer.invoke('auth:signUp', { email, password }),
+
+  // Auth: 이메일/비밀번호 로그인
+  signIn: (email: string, password: string) =>
+    ipcRenderer.invoke('auth:signIn', { email, password }),
+
+  // Auth: OAuth 로그인 (Google, GitHub 등)
+  signInWithOAuth: (provider: string) =>
+    ipcRenderer.invoke('auth:signInWithOAuth', provider),
+
+  // Auth: 로그아웃
+  signOut: () => ipcRenderer.invoke('auth:signOut'),
+
+  // Auth: 현재 세션 조회
+  getSession: () => ipcRenderer.invoke('auth:getSession'),
+
+  // Auth: 현재 사용자 조회
+  getUser: () => ipcRenderer.invoke('auth:getUser'),
+
+  // Auth: Supabase 설정 여부 확인
+  isSupabaseConfigured: () => ipcRenderer.invoke('auth:isConfigured'),
+
+  // Auth: Supabase 초기화
+  initSupabase: (url: string, anonKey: string) =>
+    ipcRenderer.invoke('auth:initSupabase', { url, anonKey }),
+
+  // Sync: 동기화 시작
+  startSync: () => ipcRenderer.invoke('sync:start'),
+
+  // Sync: 동기화 중지
+  stopSync: () => ipcRenderer.invoke('sync:stop'),
+
+  // Sync: 즉시 전체 동기화 실행
+  syncNow: () => ipcRenderer.invoke('sync:now'),
+
+  // Sync: 동기화 상태 조회
+  getSyncStatus: () => ipcRenderer.invoke('sync:status'),
 });
