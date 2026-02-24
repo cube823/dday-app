@@ -6,7 +6,6 @@ import {
   addQuest,
   updateQuest,
   deleteQuest,
-  completeQuest,
   getDailyLogs,
   getTodayQuests,
   getMilestones,
@@ -14,10 +13,12 @@ import {
   updateMilestone,
   deleteMilestone,
   getDopamineCategories, addDopamineCategory, updateDopamineCategory, deleteDopamineCategory,
-  startDopamineLog, stopDopamineLog, getActiveDopamineLog, getDopamineLogsForDate,
-  startAbstinenceTimer, getAbstinenceTimersForDate, finalizeDay,
+  getActiveDopamineLog, getDopamineLogsForDate,
+  getAbstinenceTimersForDate,
   getDopamineDaily, getDopamineDailyRange,
-} from './database';
+} from './repository';
+import { completeQuest } from './services/quest-service';
+import { startDopamineLog, stopDopamineLog, startAbstinenceTimer, finalizeDay } from './services/dopamine-service';
 
 // ─── Field mapping helpers ────────────────────────────────────────────────────
 // database.ts returns sortOrder; frontend expects order
