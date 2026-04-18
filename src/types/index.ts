@@ -28,6 +28,7 @@ export interface Quest {
   xp: number;
   deadline: string | null;
   completedAt: string | null;
+  createdAt: string;
 }
 
 // Keep backward compatibility alias

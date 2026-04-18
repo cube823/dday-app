@@ -30,6 +30,7 @@ export interface QuestRow {
   xp: number;
   deadline: string | null;
   completed_at: string | null;
+  created_at: string;
   updated_at: string;
 }
 
@@ -121,6 +122,7 @@ export interface CamelQuest {
   xp: number;
   deadline: string | null;
   completedAt: string | null;
+  createdAt: string;
 }
 
 export interface CamelMilestone {
@@ -259,6 +261,7 @@ export function questToCamel(row: QuestRow): CamelQuest {
     xp: row.xp || 100,
     deadline: row.deadline || null,
     completedAt: row.completed_at || null,
+    createdAt: row.created_at,
   };
 }
 

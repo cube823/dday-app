@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Quest, Milestone } from '../types'
 import * as api from '../api/client'
+import { getUrgency, URGENCY_BADGE, URGENCY_BORDER } from '../utils/urgency'
 
 interface QuestBoardProps {
   onQuestComplete: (questId: number) => void
@@ -257,6 +258,8 @@ function QuestBoard({ onQuestComplete, onQuestsLoaded, refreshTrigger }: QuestBo
           const daysLeft = getDaysUntilDeadline(quest.deadline)
           const isAnimating = completedAnimation === quest.id
           const xpInfo = xpPopup?.questId === quest.id ? xpPopup : null
+          const urgency = quest.completed ? 'safe' : getUrgency(quest)
+          const urgencyBadge = URGENCY_BADGE[urgency]
 
           return (
             <div
@@ -266,7 +269,7 @@ function QuestBoard({ onQuestComplete, onQuestsLoaded, refreshTrigger }: QuestBo
                   ? 'bg-gray-700/50 border-gray-600 opacity-70'
                   : isAnimating
                     ? 'bg-gray-700 border-amber-400 quest-complete-glow'
-                    : 'bg-gray-700 border-gray-600 hover:border-amber-500/50'
+                    : `bg-gray-700 ${URGENCY_BORDER[urgency]} hover:border-amber-500/50`
               }`}
             >
               <div className="p-4 relative">
@@ -315,6 +318,11 @@ function QuestBoard({ onQuestComplete, onQuestsLoaded, refreshTrigger }: QuestBo
                             {DIFFICULTY_LABELS[quest.difficulty]}
                           </span>
                           <span className="text-xs text-amber-400 font-medium">+{quest.xp}XP</span>
+                          {!quest.completed && urgencyBadge && (
+                            <span className="text-xs px-2 py-0.5 rounded font-medium bg-gray-800/80">
+                              {urgencyBadge}
+                            </span>
+                          )}
                           {daysLeft !== null && (
                             <span className={`text-xs px-2 py-0.5 rounded font-medium ${
                               daysLeft <= 0 ? 'bg-red-900/50 text-red-400' :

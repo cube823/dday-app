@@ -39,6 +39,7 @@ const SCHEMA = `
     xp INTEGER NOT NULL DEFAULT 100,
     deadline TEXT,
     completed_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
@@ -134,6 +135,9 @@ export function initDatabase(): void {
   // 기존 DB에 도파민 컬럼이 없는 경우 마이그레이션
   migrateDopamineColumns();
 
+  // 기존 퀘스트 테이블에 created_at 컬럼이 없는 경우 마이그레이션
+  migrateQuestCreatedAt();
+
   // JSON 파일에서 마이그레이션
   migrateFromJson();
 
@@ -190,6 +194,19 @@ function migrateDopamineColumns(): void {
     if (!colNames.includes(m.col)) {
       database.exec(m.sql);
     }
+  }
+}
+
+/** 기존 quests 테이블에 created_at 컬럼이 없으면 추가 */
+function migrateQuestCreatedAt(): void {
+  const database = getDb();
+  const columns = database.pragma('table_info(quests)') as Array<{ name: string }>;
+  const colNames = columns.map(c => c.name);
+
+  if (!colNames.includes('created_at')) {
+    database.exec(
+      `ALTER TABLE quests ADD COLUMN created_at TEXT NOT NULL DEFAULT (datetime('now'))`,
+    );
   }
 }
 

@@ -36,6 +36,7 @@ interface FrontendQuest {
   xp: number;
   deadline: string | null;
   completedAt: string | null;
+  createdAt: string;
 }
 
 interface FrontendMilestone {

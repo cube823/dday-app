@@ -1,4 +1,5 @@
 import { Quest } from '../types'
+import { getUrgency, URGENCY_BADGE, URGENCY_BORDER } from '../utils/urgency'
 
 interface DailyQuestProps {
   quests: Quest[]
@@ -76,10 +77,12 @@ function DailyQuest({ quests, onCompleteQuest }: DailyQuestProps) {
           )}
           {todayQuests.map((quest) => {
             const daysLeft = getDaysUntilDeadline(quest.deadline)
+            const urgency = getUrgency(quest)
+            const urgencyBadge = URGENCY_BADGE[urgency]
             return (
               <div
                 key={quest.id}
-                className="flex items-center gap-3 p-3 bg-gray-700/50 rounded-lg border border-gray-600 hover:border-amber-600/50 transition-colors"
+                className={`flex items-center gap-3 p-3 bg-gray-700/50 rounded-lg border hover:border-amber-600/50 transition-colors ${URGENCY_BORDER[urgency]}`}
               >
                 <button
                   onClick={() => onCompleteQuest(quest.id)}
@@ -108,6 +111,9 @@ function DailyQuest({ quests, onCompleteQuest }: DailyQuestProps) {
                 </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {urgencyBadge && (
+                    <span className="text-xs">{urgencyBadge}</span>
+                  )}
                   {daysLeft !== null && (
                     <span className={`text-xs font-medium px-2 py-1 rounded ${
                       daysLeft <= 0 ? 'bg-red-900/50 text-red-400' :
